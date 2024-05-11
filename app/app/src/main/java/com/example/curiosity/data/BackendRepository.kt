@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package com.example.curiosity.network
+package com.example.curiosity.data
+
 
 import com.example.curiosity.model.Article
-import retrofit2.http.GET
+import com.example.curiosity.network.ServerApiService
 
-interface ServerApiService {
-    @GET("articles")
-    suspend fun getArticles(): List<Article>
+
+interface BackendRepository {
+    suspend fun getAmphibians(): List<Article>
+}
+
+
+class DefaultBackendRepository(
+    private val serverApiService: ServerApiService
+) : BackendRepository {
+    override suspend fun getAmphibians(): List<Article> = serverApiService.getArticles()
 }

@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package com.example.curiosity.network
+package com.example.curiosity
 
-import com.example.curiosity.model.Article
-import retrofit2.http.GET
+import android.app.Application
+import com.example.curiosity.data.AppContainer
+import com.example.curiosity.data.DefaultAppContainer
 
-interface ServerApiService {
-    @GET("articles")
-    suspend fun getArticles(): List<Article>
+class CuriosityApplication : Application() {
+    lateinit var container: AppContainer
+    override fun onCreate() {
+        super.onCreate()
+        container = DefaultAppContainer()
+    }
 }

@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.example.curiosity.network
+package com.example.curiosity.model
 
-import com.example.curiosity.model.Article
-import retrofit2.http.GET
+import kotlinx.serialization.Serializable
 
-interface ServerApiService {
-    @GET("articles")
-    suspend fun getArticles(): List<Article>
-}
+
+@Serializable
+data class Article(
+    val id: Int,
+    val title: String,
+    val content: String,
+    // @SerialName("img_src") val imgSrc: String
+)
