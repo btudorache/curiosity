@@ -28,6 +28,12 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+type Article struct {
+	Id      int    `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
 var tokenDuration = 24 * time.Hour
 var jwtSecretKey = os.Getenv("JWT_SECRET")
 var db *sql.DB
@@ -56,6 +62,7 @@ func main() {
 	http.HandleFunc("/register", registerHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/authenticate", authenticateHandler)
+	http.HandleFunc("/articles", getArticlesHandler)
 
 	log.Println("Server started at :8082")
 	log.Fatal(http.ListenAndServe(":8082", nil))
@@ -165,4 +172,26 @@ func authenticateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(map[string]string{"isAuthenticated": "true", "userId": token.Claims.(*Claims).UserId, "username": token.Claims.(*Claims).Username})
+}
+
+func getArticlesHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT id, title, content FROM articles")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var articles []Article
+	for rows.Next() {
+		var article Article
+		err := rows.Scan(&article.Id, &article.Title, &article.Content)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		articles = append(articles, article)
+	}
+
+	json.NewEncoder(w).Encode(articles)
 }
