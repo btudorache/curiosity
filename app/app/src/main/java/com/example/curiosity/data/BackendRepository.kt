@@ -18,16 +18,27 @@ package com.example.curiosity.data
 
 
 import com.example.curiosity.model.Article
+import com.example.curiosity.network.LoginData
+import com.example.curiosity.network.LoginResponseData
+import com.example.curiosity.network.RegisterData
 import com.example.curiosity.network.ServerApiService
 
 
 interface BackendRepository {
-    suspend fun getAmphibians(): List<Article>
+    suspend fun getArticles(): List<Article>
+
+    suspend fun registerUser(registerData: RegisterData)
+
+    suspend fun loginUser(loginData: LoginData): LoginResponseData
 }
 
 
 class DefaultBackendRepository(
     private val serverApiService: ServerApiService
 ) : BackendRepository {
-    override suspend fun getAmphibians(): List<Article> = serverApiService.getArticles()
+    override suspend fun getArticles(): List<Article> = serverApiService.getArticles()
+
+    override suspend fun registerUser(registerData: RegisterData) = serverApiService.registerUser(registerData)
+
+    override suspend fun loginUser(loginData: LoginData) = serverApiService.loginUser(loginData)
 }

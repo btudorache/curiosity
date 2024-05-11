@@ -36,19 +36,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.curiosity.model.Article
+import com.example.curiosity.ui.ErrorScreen
+import com.example.curiosity.ui.LoadingScreen
 
 @Composable
 fun HomeScreen(
-    appUiState: AppUiState,
+    homeUiState: HomeUiState,
     retryAction: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
-    when (appUiState) {
-        is AppUiState.Loading -> LoadingScreen(modifier.size(200.dp))
-        is AppUiState.Success ->
+    when (homeUiState) {
+        is HomeUiState.Loading -> LoadingScreen(modifier.size(200.dp))
+        is HomeUiState.Success ->
             ArticlesListScreen(
-                articles = appUiState.articles,
+                articles = homeUiState.articles,
                 modifier = modifier
                     .padding(
                         start = 16.dp,
@@ -57,28 +59,12 @@ fun HomeScreen(
                     ),
                 contentPadding = contentPadding
             )
-        is AppUiState.Error -> ErrorScreen(retryAction, modifier, appUiState.errorText)
+        is HomeUiState.Error -> ErrorScreen(retryAction, modifier, homeUiState.errorText)
     }
 }
 
 
-@Composable
-fun LoadingScreen(modifier: Modifier = Modifier) {
-    Text(text = "Loading...", modifier = modifier)
-}
-
-
-@Composable
-fun ErrorScreen(retryAction: () -> Unit, modifier: Modifier = Modifier, errorText: String) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "Failed to load data: ${errorText}")
-    }
-}
-
+// TODO: maybe refactor ArticleCard and ArticlesListScreen to another screen
 @Composable
 fun ArticleCard(article: Article, modifier: Modifier = Modifier) {
     Card(
@@ -115,7 +101,7 @@ fun ArticleCard(article: Article, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ArticlesListScreen(
+fun ArticlesListScreen(
     articles: List<Article>,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp)

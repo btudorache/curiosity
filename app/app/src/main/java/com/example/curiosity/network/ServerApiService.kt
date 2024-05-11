@@ -17,9 +17,17 @@
 package com.example.curiosity.network
 
 import com.example.curiosity.model.Article
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 
 interface ServerApiService {
     @GET("articles")
     suspend fun getArticles(): List<Article>
+
+    @POST("register")
+    suspend fun registerUser(@Body registerData: RegisterData)
+
+    @POST("login")
+    suspend fun loginUser(@Body loginData: LoginData): LoginResponseData
 }

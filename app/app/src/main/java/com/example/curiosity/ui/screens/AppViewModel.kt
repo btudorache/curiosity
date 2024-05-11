@@ -27,38 +27,102 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.curiosity.CuriosityApplication
 import com.example.curiosity.data.BackendRepository
 import com.example.curiosity.model.Article
+import com.example.curiosity.network.LoginData
+import com.example.curiosity.network.LoginResponseData
+import com.example.curiosity.network.RegisterData
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
 
 
-sealed interface AppUiState {
-    data class Success(val articles: List<Article>) : AppUiState
-    data class Error(val errorText: String) : AppUiState
-    object Loading : AppUiState
+sealed interface HomeUiState {
+    data class Success(val articles: List<Article>) : HomeUiState
+    data class Error(val errorText: String) : HomeUiState
+    object Loading : HomeUiState
+}
+
+sealed interface RegisterUiState {
+    object Idle : RegisterUiState
+    object Success : RegisterUiState
+    data class Error(val errorText: String) : RegisterUiState
+    object Loading : RegisterUiState
+}
+
+sealed interface LoginUiState {
+    object Idle : LoginUiState
+    object Success : LoginUiState
+    data class Error(val errorText: String) : LoginUiState
+    object Loading : LoginUiState
 }
 
 
 class AppViewModel(private val backendRepository: BackendRepository) : ViewModel() {
 
-    var appUiState: AppUiState by mutableStateOf(AppUiState.Loading)
+    var homeUiState: HomeUiState by mutableStateOf(HomeUiState.Loading)
         private set
 
-    init {
-        getArticles()
-    }
+    var registerUiState: RegisterUiState by mutableStateOf(RegisterUiState.Idle)
+        private set
+
+    var loginUiState: LoginUiState by mutableStateOf(LoginUiState.Idle)
+        private set
+
+    var isAuthenticated by mutableStateOf(false)
+    var authenticationToken by mutableStateOf("")
+
+//    init {
+//        getArticles()
+//    }
 
     fun getArticles() {
         viewModelScope.launch {
-            appUiState = AppUiState.Loading
-            appUiState = try {
-                AppUiState.Success(backendRepository.getAmphibians())
+            homeUiState = HomeUiState.Loading
+            homeUiState = try {
+                HomeUiState.Success(backendRepository.getArticles())
             } catch (e: IOException) {
-                AppUiState.Error(e.message.toString())
+                HomeUiState.Error(e.message.toString())
             } catch (e: HttpException) {
-                AppUiState.Error(e.message.toString())
+                HomeUiState.Error(e.message.toString())
             }
         }
+    }
+
+    fun registerUser(username: String, password: String, email: String) {
+        viewModelScope.launch {
+            registerUiState = RegisterUiState.Loading
+            registerUiState = try {
+                backendRepository.registerUser(RegisterData(username, password, email))
+                RegisterUiState.Success
+            } catch (e: IOException) {
+                RegisterUiState.Error(e.message.toString())
+            } catch (e: HttpException) {
+                RegisterUiState.Error(e.message.toString())
+            }
+        }
+    }
+
+    fun loginUser(username: String, password: String) {
+        viewModelScope.launch {
+            loginUiState = LoginUiState.Loading
+            try {
+                backendRepository.loginUser(LoginData(username, password))
+                val loginResult = backendRepository.loginUser(LoginData(username, password))
+                isAuthenticated = true
+                authenticationToken = loginResult.token
+                loginUiState = LoginUiState.Success
+            } catch (e: IOException) {
+                loginUiState = LoginUiState.Error(e.message.toString())
+            } catch (e: HttpException) {
+                loginUiState = LoginUiState.Error(e.message.toString())
+            }
+        }
+    }
+
+    fun resetUser() {
+        loginUiState = LoginUiState.Idle
+        registerUiState = RegisterUiState.Idle
+        isAuthenticated = false
+        authenticationToken = ""
     }
 
 
@@ -66,8 +130,8 @@ class AppViewModel(private val backendRepository: BackendRepository) : ViewModel
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as CuriosityApplication)
-                val amphibiansRepository = application.container.backendRepository
-                AppViewModel(backendRepository = amphibiansRepository)
+                val backendRepository = application.container.backendRepository
+                AppViewModel(backendRepository = backendRepository)
             }
         }
     }
