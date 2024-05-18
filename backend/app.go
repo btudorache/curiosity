@@ -34,6 +34,11 @@ type Article struct {
 	Content string `json:"content"`
 }
 
+type ArticleInput struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
 var tokenDuration = 24 * time.Hour
 var jwtSecretKey = os.Getenv("JWT_SECRET")
 var db *sql.DB
@@ -62,7 +67,9 @@ func main() {
 	http.HandleFunc("/register", registerHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/authenticate", authenticateHandler)
-	http.HandleFunc("/articles", getArticlesHandler)
+	http.HandleFunc("/all_articles", getArticlesHandler)
+	http.HandleFunc("/user_articles", getUserArticlesHandler)
+	http.HandleFunc("/add_article", addArticleHandler)
 
 	log.Println("Server started at :8082")
 	log.Fatal(http.ListenAndServe(":8082", nil))
@@ -152,6 +159,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
+// TODO: extract authenticateHandler to a middleware
 func authenticateHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString := r.Header.Get("Authorization")
 	if tokenString == "" {
@@ -175,6 +183,23 @@ func authenticateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getArticlesHandler(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Authorization token is missing", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := jwt.ParseWithClaims(tokenString[len("Bearer "):], &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(jwtSecretKey), nil
+	})
+
+	// Verify token
+	if err != nil || !token.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"isAuthenticated": "false"})
+		return
+	}
+
 	rows, err := db.Query("SELECT id, title, content FROM articles")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -194,4 +219,85 @@ func getArticlesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(articles)
+}
+
+func getUserArticlesHandler(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Authorization token is missing", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := jwt.ParseWithClaims(tokenString[len("Bearer "):], &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(jwtSecretKey), nil
+	})
+
+	// Verify token
+	if err != nil || !token.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"isAuthenticated": "false"})
+		return
+	}
+
+	rows, err := db.Query(fmt.Sprintf("SELECT id, title, content FROM articles WHERE author_id=%s", token.Claims.(*Claims).UserId))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var articles []Article
+	for rows.Next() {
+		var article Article
+		err := rows.Scan(&article.Id, &article.Title, &article.Content)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		articles = append(articles, article)
+	}
+
+	json.NewEncoder(w).Encode(articles)
+}
+
+func addArticleHandler(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Authorization token is missing", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := jwt.ParseWithClaims(tokenString[len("Bearer "):], &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(jwtSecretKey), nil
+	})
+
+	// Verify token
+	if err != nil || !token.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"isAuthenticated": "false"})
+		return
+	}
+
+	var articleInput ArticleInput
+	err = json.NewDecoder(r.Body).Decode(&articleInput)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Insert user into database
+	var articleId int
+	err = db.QueryRow("INSERT INTO articles(title, content, author_id) VALUES ($1, $2, $3) RETURNING id", articleInput.Title, articleInput.Content, token.Claims.(*Claims).UserId).Scan(&articleId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var article Article
+	article.Id = articleId
+	article.Title = articleInput.Title
+	article.Content = articleInput.Content
+
+	log.Println("Added article", articleInput.Title, "to the database")
+	json.NewEncoder(w).Encode(article)
 }
