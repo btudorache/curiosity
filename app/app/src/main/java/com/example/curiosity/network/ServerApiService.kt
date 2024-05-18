@@ -17,13 +17,22 @@
 package com.example.curiosity.network
 
 import com.example.curiosity.model.Article
+import com.example.curiosity.model.ArticleInput
+import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface ServerApiService {
-    @GET("articles")
-    suspend fun getArticles(): List<Article>
+    @GET("all_articles")
+    suspend fun getArticles(@Header("Authorization") token: String): List<Article>
+
+    @GET("user_articles")
+    suspend fun getUserArticles(@Header("Authorization") token: String): List<Article>
+
+    @POST("add_article")
+    suspend fun addArticle(@Header("Authorization") token: String, @Body articleInput: ArticleInput): Article
 
     @POST("register")
     suspend fun registerUser(@Body registerData: RegisterData)

@@ -60,6 +60,7 @@ fun HomeScreen(
                 contentPadding = contentPadding
             )
         is HomeUiState.Error -> ErrorScreen(retryAction, modifier, homeUiState.errorText)
+        else -> {}
     }
 }
 
@@ -114,7 +115,7 @@ fun ArticlesListScreen(
         items(
             items = articles,
             key = { article ->
-                article.title
+                article.id
             }
         ) { amphibian ->
             ArticleCard(article = amphibian, modifier = Modifier.fillMaxSize())

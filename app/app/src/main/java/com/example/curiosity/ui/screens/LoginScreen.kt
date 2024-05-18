@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -19,6 +20,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -58,6 +60,7 @@ fun LoginScreen(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -76,11 +79,11 @@ fun LoginScreen(
             onClick = onRegisterScreen,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Text(text = "Register")
+            Text(text = "No account? Register")
         }
 
         when (loginUiState) {
-            is LoginUiState.Loading -> Text(text = "loading...")
+            is LoginUiState.Loading -> CircularProgressIndicator() // Text(text = "loading...")
             is LoginUiState.Error -> Text(text = "Failed to load: $loginUiState.message")
             is LoginUiState.Success -> onSuccessfulLogin()
             else -> {}

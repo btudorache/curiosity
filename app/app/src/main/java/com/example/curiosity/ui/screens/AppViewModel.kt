@@ -16,6 +16,7 @@
 
 package com.example.curiosity.ui.screens
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -27,15 +28,20 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.curiosity.CuriosityApplication
 import com.example.curiosity.data.BackendRepository
 import com.example.curiosity.model.Article
+import com.example.curiosity.model.ArticleInput
 import com.example.curiosity.network.LoginData
-import com.example.curiosity.network.LoginResponseData
 import com.example.curiosity.network.RegisterData
+import com.google.ai.client.generativeai.BuildConfig
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.GenerateContentResponse
+import com.google.ai.client.generativeai.type.generationConfig
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
 
 
 sealed interface HomeUiState {
+    object Idle: HomeUiState
     data class Success(val articles: List<Article>) : HomeUiState
     data class Error(val errorText: String) : HomeUiState
     object Loading : HomeUiState
@@ -55,11 +61,25 @@ sealed interface LoginUiState {
     object Loading : LoginUiState
 }
 
+sealed interface SearchUiState {
+    object Idle : SearchUiState
+    data class Success(val promptResponse: String) : SearchUiState
+    data class Error(val errorText: String) : SearchUiState
+    object Loading : SearchUiState
+}
 
 class AppViewModel(private val backendRepository: BackendRepository) : ViewModel() {
 
-    var homeUiState: HomeUiState by mutableStateOf(HomeUiState.Loading)
+    private val generativeModel = GenerativeModel(
+        modelName = "gemini-pro",
+        // TODO: hide this later
+        apiKey = "SECRET_KEY"
+    )
+
+    var homeUiState: HomeUiState by mutableStateOf(HomeUiState.Idle)
         private set
+
+    var userArticles: List<Article> by mutableStateOf(emptyList())
 
     var registerUiState: RegisterUiState by mutableStateOf(RegisterUiState.Idle)
         private set
@@ -67,23 +87,36 @@ class AppViewModel(private val backendRepository: BackendRepository) : ViewModel
     var loginUiState: LoginUiState by mutableStateOf(LoginUiState.Idle)
         private set
 
+    var searchUiState: SearchUiState by mutableStateOf(SearchUiState.Idle)
+        private set
+
     var isAuthenticated by mutableStateOf(false)
     var authenticationToken by mutableStateOf("")
 
-//    init {
-//        getArticles()
-//    }
 
     fun getArticles() {
         viewModelScope.launch {
             homeUiState = HomeUiState.Loading
             homeUiState = try {
-                HomeUiState.Success(backendRepository.getArticles())
+                HomeUiState.Success(backendRepository.getArticles(authenticationToken))
             } catch (e: IOException) {
                 HomeUiState.Error(e.message.toString())
             } catch (e: HttpException) {
                 HomeUiState.Error(e.message.toString())
             }
+        }
+    }
+
+    fun getUserArticles() {
+        viewModelScope.launch {
+            userArticles = backendRepository.getUserArticles(authenticationToken)
+        }
+    }
+
+    private fun addArticle(articleInput: ArticleInput) {
+        viewModelScope.launch {
+            val newArticle = backendRepository.addArticle(authenticationToken, articleInput)
+            userArticles = userArticles + newArticle
         }
     }
 
@@ -110,6 +143,12 @@ class AppViewModel(private val backendRepository: BackendRepository) : ViewModel
                 isAuthenticated = true
                 authenticationToken = loginResult.token
                 loginUiState = LoginUiState.Success
+
+                // try to decode to see if it works
+//                val jwt = JWT(loginResult.token);
+//                jwt.getClaim("username").asString()?.let { Log.d("JWT_DATA", it) }
+//                jwt.getClaim("user_id").asString()?.let { Log.d("JWT_DATA", it) }
+
             } catch (e: IOException) {
                 loginUiState = LoginUiState.Error(e.message.toString())
             } catch (e: HttpException) {
@@ -125,6 +164,24 @@ class AppViewModel(private val backendRepository: BackendRepository) : ViewModel
         authenticationToken = ""
     }
 
+    fun generateText(prompt: String) {
+        viewModelScope.launch {
+            searchUiState = SearchUiState.Loading
+            searchUiState = try {
+                val result = generativeModel.generateContent("Generate a short article about $prompt").text
+                if (result.isNullOrEmpty()) {
+                    SearchUiState.Error("Failed to generate response")
+                } else {
+                    addArticle(ArticleInput(prompt, result))
+                    SearchUiState.Success(result)
+                }
+            } catch (e: IOException) {
+                SearchUiState.Error(e.message.toString())
+            } catch (e: HttpException) {
+                SearchUiState.Error(e.message.toString())
+            }
+        }
+    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

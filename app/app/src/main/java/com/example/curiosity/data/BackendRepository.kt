@@ -18,14 +18,22 @@ package com.example.curiosity.data
 
 
 import com.example.curiosity.model.Article
+import com.example.curiosity.model.ArticleInput
 import com.example.curiosity.network.LoginData
 import com.example.curiosity.network.LoginResponseData
 import com.example.curiosity.network.RegisterData
 import com.example.curiosity.network.ServerApiService
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.await
 
 
 interface BackendRepository {
-    suspend fun getArticles(): List<Article>
+    suspend fun getArticles(token: String): List<Article>
+    suspend fun getUserArticles(token: String): List<Article>
+
+    suspend fun addArticle(token: String, articleInput: ArticleInput): Article
 
     suspend fun registerUser(registerData: RegisterData)
 
@@ -36,7 +44,10 @@ interface BackendRepository {
 class DefaultBackendRepository(
     private val serverApiService: ServerApiService
 ) : BackendRepository {
-    override suspend fun getArticles(): List<Article> = serverApiService.getArticles()
+    override suspend fun getArticles(token: String): List<Article> = serverApiService.getArticles("Bearer $token")
+    override suspend fun getUserArticles(token: String): List<Article> = serverApiService.getUserArticles("Bearer $token")
+
+    override suspend fun addArticle(token: String, articleInput: ArticleInput) = serverApiService.addArticle("Bearer $token", articleInput)
 
     override suspend fun registerUser(registerData: RegisterData) = serverApiService.registerUser(registerData)
 

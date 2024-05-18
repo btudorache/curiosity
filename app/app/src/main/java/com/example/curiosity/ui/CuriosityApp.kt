@@ -82,42 +82,44 @@ fun CuriosityApp() {
             )
         },
         bottomBar = {
-            NavigationBar(
+            if (appViewModel.isAuthenticated) {
+                NavigationBar(
 
-            ) {
-                NavigationBarItem(
-                    selected = currentScreen == CuriosityScreen.Search,
-                    onClick = {
-                        navController.navigate(CuriosityScreen.Search.name)
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Sharp.Search,
-                            contentDescription = "Search content"
-                        )
-                    }
-                )
-                NavigationBarItem(
-                    selected = currentScreen == CuriosityScreen.Home,
-                    onClick = {
-                        navController.navigate(CuriosityScreen.Home.name)
-                    },
-                    icon = {
-                        Icon(imageVector = Icons.Sharp.Home, contentDescription = "Home screen")
-                    }
-                )
-                NavigationBarItem(
-                    selected = currentScreen == CuriosityScreen.Archived,
-                    onClick = {
-                        navController.navigate(CuriosityScreen.Archived.name)
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Sharp.Favorite,
-                            contentDescription = "Archived article"
-                        )
-                    }
-                )
+                ) {
+                    NavigationBarItem(
+                        selected = currentScreen == CuriosityScreen.Search,
+                        onClick = {
+                            navController.navigate(CuriosityScreen.Search.name)
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Sharp.Search,
+                                contentDescription = "Search content"
+                            )
+                        }
+                    )
+                    NavigationBarItem(
+                        selected = currentScreen == CuriosityScreen.Home,
+                        onClick = {
+                            navController.navigate(CuriosityScreen.Home.name)
+                        },
+                        icon = {
+                            Icon(imageVector = Icons.Sharp.Home, contentDescription = "Home screen")
+                        }
+                    )
+                    NavigationBarItem(
+                        selected = currentScreen == CuriosityScreen.Archived,
+                        onClick = {
+                            navController.navigate(CuriosityScreen.Archived.name)
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Sharp.Favorite,
+                                contentDescription = "Archived article"
+                            )
+                        }
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -142,6 +144,7 @@ fun CuriosityApp() {
                         },
                         onSuccessfulLogin = {
                             appViewModel.getArticles()
+                            appViewModel.getUserArticles()
                             navController.navigate(CuriosityScreen.Home.name)
                         }
                     )
@@ -168,13 +171,13 @@ fun CuriosityApp() {
                 }
                 composable(CuriosityScreen.Search.name) {
                     SearchScreen(
-                        searchText = "search text",
-                        onSearchTextChanged = {text ->}
+                        searchUiState = appViewModel.searchUiState,
+                        onGeneratePrompt = appViewModel::generateText
                     )
                 }
                 composable(CuriosityScreen.Archived.name) {
                     ArchivedScreen(
-                        homeUiState = appViewModel.homeUiState,
+                        userArticles = appViewModel.userArticles,
                         retryAction = appViewModel::getArticles,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = innerPadding
