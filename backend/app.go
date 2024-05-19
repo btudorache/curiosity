@@ -154,6 +154,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("Authenticated user", user.Username)
+	log.Println("Token string:", tokenString)
 
 	// Send the token in the response
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
@@ -200,14 +201,14 @@ func getArticlesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.Query("SELECT id, title, content FROM articles")
+	rows, err := db.Query("SELECT id, title, content FROM articles WHERE author_id IS NULL")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	var articles []Article
+	var articles []Article = []Article{}
 	for rows.Next() {
 		var article Article
 		err := rows.Scan(&article.Id, &article.Title, &article.Content)
@@ -246,7 +247,7 @@ func getUserArticlesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var articles []Article
+	var articles []Article = []Article{}
 	for rows.Next() {
 		var article Article
 		err := rows.Scan(&article.Id, &article.Title, &article.Content)
