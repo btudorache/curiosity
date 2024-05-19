@@ -17,6 +17,7 @@
 package com.example.curiosity.data
 
 
+import android.util.Log
 import com.example.curiosity.model.Article
 import com.example.curiosity.model.ArticleInput
 import com.example.curiosity.network.LoginData

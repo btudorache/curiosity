@@ -16,6 +16,8 @@
 
 package com.example.curiosity.ui.screens
 
+import android.util.Log
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,8 +27,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +49,8 @@ fun HomeScreen(
     homeUiState: HomeUiState,
     retryAction: () -> Unit,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(0.dp)
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    onFocusArticle: (Article) -> Unit
 ) {
     when (homeUiState) {
         is HomeUiState.Loading -> LoadingScreen(modifier.size(200.dp))
@@ -57,7 +63,8 @@ fun HomeScreen(
                         top = 16.dp,
                         end = 16.dp
                     ),
-                contentPadding = contentPadding
+                contentPadding = contentPadding,
+                onFocusArticle = onFocusArticle
             )
         is HomeUiState.Error -> ErrorScreen(retryAction, modifier, homeUiState.errorText)
         else -> {}
@@ -65,12 +72,28 @@ fun HomeScreen(
 }
 
 
-// TODO: maybe refactor ArticleCard and ArticlesListScreen to another screen
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArticleCard(article: Article, modifier: Modifier = Modifier) {
+fun ArticleCard(article: Article, modifier: Modifier = Modifier, onFocusArticle: (Article) -> Unit = {}, isFocused: Boolean = false) {
+    val articleContent = if (isFocused) {
+        article.content
+    } else {
+        if (article.content.length > 200) {
+            "${article.content.substring(0, 200)}..."
+        } else {
+            article.content
+        }
+    }
+    val onFocusArticleHandler: (Article) -> Unit = if (!isFocused) onFocusArticle else { _ -> }
+    val cardModifier = if (isFocused) modifier.padding(16.dp) else modifier
+    val textModifier = if (isFocused) Modifier.padding(16.dp).verticalScroll(rememberScrollState()) else Modifier.padding(16.dp)
+
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(8.dp)
+        modifier = cardModifier,
+        shape = RoundedCornerShape(8.dp),
+        onClick = {
+            onFocusArticleHandler(article)
+        }
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -92,10 +115,10 @@ fun ArticleCard(article: Article, modifier: Modifier = Modifier) {
 //                contentScale = ContentScale.FillWidth,
 //            )
             Text(
-                text = article.content,
+                text = articleContent,
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Justify,
-                modifier = Modifier.padding(16.dp)
+                modifier = textModifier
             )
         }
     }
@@ -105,7 +128,8 @@ fun ArticleCard(article: Article, modifier: Modifier = Modifier) {
 fun ArticlesListScreen(
     articles: List<Article>,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(0.dp)
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    onFocusArticle: (Article) -> Unit
 ) {
     LazyColumn(
         modifier = modifier,
@@ -118,7 +142,7 @@ fun ArticlesListScreen(
                 article.id
             }
         ) { amphibian ->
-            ArticleCard(article = amphibian, modifier = Modifier.fillMaxSize())
+            ArticleCard(article = amphibian, modifier = Modifier.fillMaxSize(), onFocusArticle = onFocusArticle)
         }
     }
 }

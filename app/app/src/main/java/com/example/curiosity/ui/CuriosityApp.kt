@@ -1,8 +1,10 @@
 package com.example.curiosity.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.sharp.AccountCircle
 import androidx.compose.material.icons.sharp.Favorite
 import androidx.compose.material.icons.sharp.Home
@@ -28,11 +30,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.curiosity.R
+import com.example.curiosity.model.Article
 import com.example.curiosity.ui.screens.AppViewModel
 import com.example.curiosity.ui.screens.ArchivedScreen
+import com.example.curiosity.ui.screens.ArticleDetailScreen
 import com.example.curiosity.ui.screens.HomeScreen
 import com.example.curiosity.ui.screens.LoginScreen
 import com.example.curiosity.ui.screens.RegisterScreen
+import com.example.curiosity.ui.screens.RegisterUiState
 import com.example.curiosity.ui.screens.SearchScreen
 
 enum class CuriosityScreen() {
@@ -40,7 +45,8 @@ enum class CuriosityScreen() {
     Register,
     Home,
     Search,
-    Archived
+    Archived,
+    Article
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +63,11 @@ fun CuriosityApp() {
 
     val appViewModel: AppViewModel = viewModel(factory = AppViewModel.Factory)
 
+    val onFocusArticle = { article: Article ->
+        appViewModel.setFocusedArticle(article)
+        navController.navigate(CuriosityScreen.Article.name)
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -66,6 +77,14 @@ fun CuriosityApp() {
                         stringResource(R.string.app_name),
                         style = MaterialTheme.typography.headlineMedium
                     )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Go back"
+                        )
+                    }
                 },
                 actions = {
                     IconButton(onClick = {
@@ -140,6 +159,7 @@ fun CuriosityApp() {
                             appViewModel.loginUser(username, password)
                         },
                         onRegisterScreen = {
+                            appViewModel.resetRegisterState()
                             navController.navigate(CuriosityScreen.Register.name)
                         },
                         onSuccessfulLogin = {
@@ -166,7 +186,8 @@ fun CuriosityApp() {
                         homeUiState = appViewModel.homeUiState,
                         retryAction = appViewModel::getArticles,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = innerPadding
+                        contentPadding = innerPadding,
+                        onFocusArticle = onFocusArticle
                     )
                 }
                 composable(CuriosityScreen.Search.name) {
@@ -180,7 +201,13 @@ fun CuriosityApp() {
                         userArticles = appViewModel.userArticles,
                         retryAction = appViewModel::getArticles,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = innerPadding
+                        contentPadding = innerPadding,
+                        onFocusArticle = onFocusArticle
+                    )
+                }
+                composable(CuriosityScreen.Article.name) {
+                    ArticleDetailScreen(
+                        article = appViewModel.focusArticle
                     )
                 }
             }

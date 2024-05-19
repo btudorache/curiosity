@@ -15,7 +15,8 @@ fun ArchivedScreen(
     userArticles: List<Article>,
     retryAction: () -> Unit,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(0.dp)
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    onFocusArticle: (Article) -> Unit
 ) {
     ArticlesListScreen(
         articles = userArticles,
@@ -25,6 +26,7 @@ fun ArchivedScreen(
                 top = 16.dp,
                 end = 16.dp
             ),
-        contentPadding = contentPadding
+        contentPadding = contentPadding,
+        onFocusArticle = onFocusArticle
     )
 }

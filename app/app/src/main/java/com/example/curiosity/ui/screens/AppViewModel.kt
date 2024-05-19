@@ -25,16 +25,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.curiosity.BuildConfig
 import com.example.curiosity.CuriosityApplication
 import com.example.curiosity.data.BackendRepository
 import com.example.curiosity.model.Article
 import com.example.curiosity.model.ArticleInput
 import com.example.curiosity.network.LoginData
 import com.example.curiosity.network.RegisterData
-import com.google.ai.client.generativeai.BuildConfig
 import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.GenerateContentResponse
-import com.google.ai.client.generativeai.type.generationConfig
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
@@ -63,17 +61,15 @@ sealed interface LoginUiState {
 
 sealed interface SearchUiState {
     object Idle : SearchUiState
-    data class Success(val promptResponse: String) : SearchUiState
+    data class Success(val promptResponse: String, val promptInput: String) : SearchUiState
     data class Error(val errorText: String) : SearchUiState
     object Loading : SearchUiState
 }
 
 class AppViewModel(private val backendRepository: BackendRepository) : ViewModel() {
-
     private val generativeModel = GenerativeModel(
         modelName = "gemini-pro",
-        // TODO: hide this later
-        apiKey = "SECRET_KEY"
+        apiKey = BuildConfig.GEMINI_API_KEY
     )
 
     var homeUiState: HomeUiState by mutableStateOf(HomeUiState.Idle)
@@ -93,6 +89,7 @@ class AppViewModel(private val backendRepository: BackendRepository) : ViewModel
     var isAuthenticated by mutableStateOf(false)
     var authenticationToken by mutableStateOf("")
 
+    var focusArticle: Article by mutableStateOf(Article(0, "dummy_title", "dummy_content"))
 
     fun getArticles() {
         viewModelScope.launch {
@@ -138,16 +135,13 @@ class AppViewModel(private val backendRepository: BackendRepository) : ViewModel
         viewModelScope.launch {
             loginUiState = LoginUiState.Loading
             try {
-                backendRepository.loginUser(LoginData(username, password))
+                Log.d("AppViewModel", "loginUser: $username $password")
                 val loginResult = backendRepository.loginUser(LoginData(username, password))
+                Log.d("AppViewModel", "after fetching")
                 isAuthenticated = true
                 authenticationToken = loginResult.token
                 loginUiState = LoginUiState.Success
 
-                // try to decode to see if it works
-//                val jwt = JWT(loginResult.token);
-//                jwt.getClaim("username").asString()?.let { Log.d("JWT_DATA", it) }
-//                jwt.getClaim("user_id").asString()?.let { Log.d("JWT_DATA", it) }
 
             } catch (e: IOException) {
                 loginUiState = LoginUiState.Error(e.message.toString())
@@ -173,7 +167,7 @@ class AppViewModel(private val backendRepository: BackendRepository) : ViewModel
                     SearchUiState.Error("Failed to generate response")
                 } else {
                     addArticle(ArticleInput(prompt, result))
-                    SearchUiState.Success(result)
+                    SearchUiState.Success(result, prompt)
                 }
             } catch (e: IOException) {
                 SearchUiState.Error(e.message.toString())
@@ -181,6 +175,14 @@ class AppViewModel(private val backendRepository: BackendRepository) : ViewModel
                 SearchUiState.Error(e.message.toString())
             }
         }
+    }
+
+    fun resetRegisterState() {
+        registerUiState = RegisterUiState.Idle
+    }
+
+    fun setFocusedArticle(article: Article) {
+        focusArticle = article
     }
 
     companion object {
