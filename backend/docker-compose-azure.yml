@@ -1,0 +1,34 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: postgres
+    volumes:
+      - dbinit/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  app:
+    image: androidprojectregistry.azurecr.io/containergroup:v1
+    restart: always
+    ports:
+      - "80:8082"
+    environment:
+      JWT_SECRET: secret
+      PGUSER: postgres
+      PGPASSWORD: 1234
+      PGDATABASE: postgres
+      PGHOST: db
+    depends_on:
+      - db
+
+volumes:
+  dbinit:
+    driver: azure_file
+    driver_opts:
+      share_name: postgres-init
+      storage_account_name: androidprojectstorage
+      storage_account_key: rSB0kw8iEhg006Hqa4ZFrsHtceESL+sh7Q5+JGhRPBFL3W7YKbDY0/tTKaK6Wi930B+jpJ+cHO/T+AStVxwZEg==

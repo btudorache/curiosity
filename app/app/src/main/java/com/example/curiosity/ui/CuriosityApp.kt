@@ -36,6 +36,7 @@ import com.example.curiosity.ui.screens.ArchivedScreen
 import com.example.curiosity.ui.screens.ArticleDetailScreen
 import com.example.curiosity.ui.screens.HomeScreen
 import com.example.curiosity.ui.screens.LoginScreen
+import com.example.curiosity.ui.screens.ProfileScreen
 import com.example.curiosity.ui.screens.RegisterScreen
 import com.example.curiosity.ui.screens.RegisterUiState
 import com.example.curiosity.ui.screens.SearchScreen
@@ -46,7 +47,8 @@ enum class CuriosityScreen() {
     Home,
     Search,
     Archived,
-    Article
+    Article,
+    Profile
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,9 +90,7 @@ fun CuriosityApp() {
                 },
                 actions = {
                     IconButton(onClick = {
-                        // TODO: Create accuont page
-                        appViewModel.resetUser()
-                        navController.navigate(CuriosityScreen.Login.name)
+                        navController.navigate(CuriosityScreen.Profile.name)
                     }) {
                         Icon(
                             imageVector = Icons.Sharp.AccountCircle,
@@ -153,7 +153,6 @@ fun CuriosityApp() {
             ) {
                 composable(CuriosityScreen.Login.name) {
                     LoginScreen(
-                        // TODO change login logic
                         loginUiState = appViewModel.loginUiState,
                         onLogin = { username, password ->
                             appViewModel.loginUser(username, password)
@@ -171,7 +170,6 @@ fun CuriosityApp() {
                 }
                 composable(CuriosityScreen.Register.name) {
                     RegisterScreen(
-                        // TODO change register logic
                         registerUiState = appViewModel.registerUiState,
                         onRegister = { username, password, email ->
                             appViewModel.registerUser(username, password, email)
@@ -208,6 +206,15 @@ fun CuriosityApp() {
                 composable(CuriosityScreen.Article.name) {
                     ArticleDetailScreen(
                         article = appViewModel.focusArticle
+                    )
+                }
+                composable(CuriosityScreen.Profile.name) {
+                    ProfileScreen(
+                        onLogout = {
+                            appViewModel.resetUser()
+                            navController.navigate(CuriosityScreen.Login.name)
+                        },
+                        username = appViewModel.username
                     )
                 }
             }

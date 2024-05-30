@@ -43,15 +43,15 @@ var tokenDuration = 24 * time.Hour
 var jwtSecretKey = os.Getenv("JWT_SECRET")
 var db *sql.DB
 
-// var dbUser = os.Getenv("PGUSER")
-// var dbPassword = os.Getenv("PGPASSWORD")
-// var dbHost = os.Getenv("PGHOST")
-// var dbName = os.Getenv("PGDATABASE")
+var dbUser = os.Getenv("PGUSER")
+var dbPassword = os.Getenv("PGPASSWORD")
+var dbHost = os.Getenv("PGHOST")
+var dbName = os.Getenv("PGDATABASE")
 
-var dbUser = "postgres"
-var dbPassword = "postgres"
-var dbHost = "localhost"
-var dbName = "curiosity"
+// var dbUser = "postgres"
+// var dbPassword = "postgres"
+// var dbHost = "localhost"
+// var dbName = "curiosity"
 
 func main() {
 	// Connect to PostgreSQL database

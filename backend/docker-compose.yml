@@ -1,7 +1,7 @@
 version: '3.9'
 
 services:
-  users_db:
+  db:
     image: postgres:latest
     restart: always
     networks:
@@ -25,9 +25,9 @@ services:
       PGUSER: postgres
       PGPASSWORD: 1234
       PGDATABASE: postgres
-      PGHOST: users_db
+      PGHOST: db
     depends_on:
-      - users_db
+      - db
 
 networks:
   app:

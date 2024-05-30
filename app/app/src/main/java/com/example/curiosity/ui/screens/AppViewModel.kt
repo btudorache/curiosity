@@ -25,6 +25,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.auth0.android.jwt.JWT
 import com.example.curiosity.BuildConfig
 import com.example.curiosity.CuriosityApplication
 import com.example.curiosity.data.BackendRepository
@@ -88,6 +89,8 @@ class AppViewModel(private val backendRepository: BackendRepository) : ViewModel
 
     var isAuthenticated by mutableStateOf(false)
     var authenticationToken by mutableStateOf("")
+    val username: String
+        get() = if (authenticationToken.isNotEmpty()) JWT(authenticationToken).getClaim("username").asString().toString() else ""
 
     var focusArticle: Article by mutableStateOf(Article(0, "dummy_title", "dummy_content"))
 
